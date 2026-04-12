@@ -24,7 +24,8 @@ def is_valid_coordinate(lon: float, lat: float) -> bool:
 def sanitize_filename(name: str) -> str:
     """Strip path separators and dangerous characters from a filename."""
     name = re.sub(r"[^\w\s\-.]", "_", name)
-    return name.strip().lstrip(".")[:255]
+    # Strip leading dots AND leading underscores that came from path separators
+    return name.strip().lstrip("._")[:255]
 
 
 def validate_export_format(fmt: str) -> bool:

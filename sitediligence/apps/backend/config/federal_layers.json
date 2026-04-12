@@ -1,49 +1,334 @@
 {
-  "_comment": "Stub — federal data layer definitions including WMS/REST endpoints and display config",
+  "_comment": "Federal GIS data source definitions — REST endpoints, display config, field mappings",
   "layers": [
     {
-      "id": "nwi-wetlands",
+      "id": "wetlands",
       "name": "NWI Wetlands",
       "agency": "USFWS",
-      "type": "wms",
-      "url": "https://www.fws.gov/wetlands/arcgis/services/Wetlands/MapServer/WMSServer",
-      "layers": "Wetlands",
-      "format": "image/png",
-      "color": "#27ae60",
-      "category": "environmental"
+      "program": "National Wetlands Inventory",
+      "category": "environmental",
+      "color": "#2c7bb6",
+      "regulatory_flags": ["CWA Section 404", "CWA Section 401"],
+      "service": {
+        "type": "arcgis_mapserver",
+        "base_url": "https://fwspublicservices.wim.usgs.gov/wetlandsmapservice/rest/services/Wetlands/MapServer",
+        "layer_id": 0,
+        "query_fields": ["ATTRIBUTE", "WETLAND_TYPE", "ACRES", "GLOBALID"],
+        "geometry_type": "polygon",
+        "spatial_ref": 4326
+      },
+      "wms": {
+        "url": "https://fwspublicservices.wim.usgs.gov/wetlandsmapservice/rest/services/Wetlands/MapServer/WMSServer",
+        "layer": "Wetlands",
+        "format": "image/png",
+        "transparent": true
+      },
+      "display": {
+        "opacity": 0.6,
+        "system_colors": {
+          "Palustrine": "#1a9850",
+          "Estuarine":  "#2c7bb6",
+          "Riverine":   "#74add1",
+          "Lacustrine": "#abd9e9",
+          "Marine":     "#4575b4"
+        }
+      },
+      "docs_url": "https://www.fws.gov/program/national-wetlands-inventory/wetlands-mapper"
     },
     {
-      "id": "fema-flood",
-      "name": "FEMA Flood Zones",
+      "id": "flood_zones",
+      "name": "FEMA Flood Zones (NFHL)",
       "agency": "FEMA",
-      "type": "wms",
-      "url": "https://hazards.fema.gov/gis/nfhl/services/public/NFHLWMS/MapServer/WmsServer",
-      "layers": "Flood_Hazard_Zone",
-      "format": "image/png",
-      "color": "#3498db",
-      "category": "regulatory"
+      "program": "National Flood Hazard Layer",
+      "category": "regulatory",
+      "color": "#f97316",
+      "regulatory_flags": ["NFIP", "Executive Order 11988"],
+      "service": {
+        "type": "arcgis_mapserver",
+        "base_url": "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer",
+        "layer_id": 28,
+        "query_fields": ["FLD_ZONE", "BFE_DSGND", "DFIRM_ID", "FLOODWAY", "SFHA_TF", "DEPTH", "SOURCE_CIT"],
+        "key_field": "FLD_ZONE",
+        "geometry_type": "polygon",
+        "spatial_ref": 4326,
+        "notes": "Layer 28 = S_Fld_Haz_Ar (Flood Hazard Zone polygons). BFE in feet NAVD88."
+      },
+      "wms": {
+        "url": "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/WMSServer",
+        "layer": "28",
+        "format": "image/png",
+        "transparent": true
+      },
+      "display": {
+        "opacity": 0.5,
+        "zone_colors": {
+          "AE":  "#f97316",
+          "VE":  "#ef4444",
+          "A":   "#fb923c",
+          "AH":  "#f59e0b",
+          "AO":  "#fbbf24",
+          "X":   "#d1d5db",
+          "D":   "#e5e7eb"
+        }
+      },
+      "docs_url": "https://msc.fema.gov/portal/home"
     },
     {
-      "id": "pad-us",
-      "name": "Protected Areas (PAD-US)",
+      "id": "nhd_streams",
+      "name": "NHD Streams & Water Bodies",
       "agency": "USGS",
-      "type": "wms",
-      "url": "https://gis1.usgs.gov/arcgis/services/PADUS3/PADUS3_0Combined/MapServer/WmsServer",
-      "layers": "0",
-      "format": "image/png",
-      "color": "#e74c3c",
-      "category": "regulatory"
-    },
-    {
-      "id": "nhd-streams",
-      "name": "NHD Streams",
-      "agency": "USGS",
-      "type": "wms",
-      "url": "https://basemap.nationalmap.gov/arcgis/services/USGSHydroCached/MapServer/WMSServer",
-      "layers": "0",
-      "format": "image/png",
+      "program": "National Hydrography Dataset Plus HR",
+      "category": "environmental",
       "color": "#2980b9",
-      "category": "environmental"
+      "regulatory_flags": ["CWA Section 404"],
+      "service": {
+        "type": "arcgis_mapserver",
+        "base_url": "https://hydro.nationalmap.gov/arcgis/rest/services/NHDPlus_HR/MapServer",
+        "layer_id": 2,
+        "query_fields": ["GNIS_NAME", "FTYPE", "FCODE", "LENGTHKM"],
+        "geometry_type": "polyline",
+        "spatial_ref": 4326
+      },
+      "wms": {
+        "url": "https://hydro.nationalmap.gov/arcgis/rest/services/NHDPlus_HR/MapServer/WMSServer",
+        "layer": "2",
+        "format": "image/png",
+        "transparent": true
+      },
+      "display": {
+        "color": "#2980b9",
+        "opacity": 0.8,
+        "weight": 2
+      },
+      "docs_url": "https://www.usgs.gov/national-hydrography/national-hydrography-dataset"
+    },
+    {
+      "id": "dem_elevation",
+      "name": "3DEP Elevation (1-arc-second DEM)",
+      "agency": "USGS",
+      "program": "3D Elevation Program",
+      "category": "topographic",
+      "service": {
+        "type": "rest_json",
+        "point_query_url": "https://epqs.nationalmap.gov/v1/json",
+        "point_params": {"units": "Meters", "output": "json"},
+        "download_api": "https://tnmaccess.nationalmap.gov/api/v1/products",
+        "dataset_tag": "Digital Elevation Model (DEM) 1 arc-second"
+      },
+      "docs_url": "https://www.usgs.gov/3d-elevation-program"
+    },
+    {
+      "id": "soils",
+      "name": "SSURGO Soils",
+      "agency": "USDA NRCS",
+      "program": "Web Soil Survey — SSURGO",
+      "category": "environmental",
+      "service": {
+        "type": "wfs_and_soap",
+        "spatial_wfs": "https://sdmdataaccess.nrcs.usda.gov/Spatial/SDM.wfs",
+        "tabular_rest": "https://SDMDataAccess.sc.egov.usda.gov/Tabular/SDMTabularService/post.rest",
+        "tabular_soap": "https://SDMDataAccess.nrcs.usda.gov/Tabular/SDMTabularService.asmx",
+        "key_fields": ["mukey", "muname", "hydgrpdcd", "drclassdcd"],
+        "hydric_query": "SELECT mukey, muname, hydgrpdcd FROM mapunit WHERE hydgrpdcd IS NOT NULL"
+      },
+      "docs_url": "https://websoilsurvey.nrcs.usda.gov"
+    },
+    {
+      "id": "nlcd_landcover",
+      "name": "NLCD 2021 Land Cover",
+      "agency": "USGS / EPA",
+      "program": "Multi-Resolution Land Characteristics Consortium",
+      "category": "landcover",
+      "service": {
+        "type": "wms",
+        "wms_url": "https://www.mrlc.gov/geoserver/mrlc_display/NLCD_2021_Land_Cover_L48/wms",
+        "layer": "NLCD_2021_Land_Cover_L48",
+        "format": "image/png"
+      },
+      "docs_url": "https://www.mrlc.gov/data/nlcd-2021-land-cover-conus"
+    },
+    {
+      "id": "epa_frs",
+      "name": "EPA Facility Registry Service",
+      "agency": "EPA",
+      "program": "FRS — cross-program facility registry",
+      "category": "contamination",
+      "service": {
+        "type": "rest_json",
+        "base_url": "https://ofmpub.epa.gov/frs_public2/frs_rest_services.get_facilities",
+        "radius_param": "search_radius",
+        "lat_param": "latitude83",
+        "lon_param": "longitude83",
+        "output_param": "output",
+        "output_value": "JSON"
+      },
+      "docs_url": "https://www.epa.gov/frs"
+    },
+    {
+      "id": "epa_echo",
+      "name": "EPA ECHO — CWA Facilities",
+      "agency": "EPA",
+      "program": "Enforcement and Compliance History Online",
+      "category": "contamination",
+      "service": {
+        "type": "rest_json",
+        "base_url": "https://echodata.epa.gov/echo/cwa_rest_services.get_facility_info",
+        "lat_param": "p_lat",
+        "lon_param": "p_long",
+        "radius_param": "p_radius",
+        "output_param": "output",
+        "output_value": "JSON"
+      },
+      "docs_url": "https://echo.epa.gov"
+    },
+    {
+      "id": "epa_superfund",
+      "name": "EPA Superfund Sites (CERCLIS)",
+      "agency": "EPA",
+      "program": "CERCLA / Superfund",
+      "category": "contamination",
+      "regulatory_flags": ["CERCLA"],
+      "service": {
+        "type": "arcgis_mapserver",
+        "base_url": "https://geodata.epa.gov/arcgis/rest/services/OLEM/Superfund_Sites/MapServer",
+        "layer_id": 0,
+        "query_fields": ["SITE_NAME", "SITE_ID", "STATUS", "NPL_STATUS", "ADDRESS"],
+        "geometry_type": "point"
+      },
+      "docs_url": "https://www.epa.gov/superfund"
+    },
+    {
+      "id": "epa_rcra",
+      "name": "EPA RCRA Hazardous Waste Handlers",
+      "agency": "EPA",
+      "program": "Resource Conservation and Recovery Act",
+      "category": "contamination",
+      "regulatory_flags": ["RCRA"],
+      "service": {
+        "type": "rest_json",
+        "base_url": "https://echodata.epa.gov/echo/rcra_rest_services.get_facility_info",
+        "lat_param": "p_lat",
+        "lon_param": "p_long",
+        "radius_param": "p_radius",
+        "output_param": "output",
+        "output_value": "JSON"
+      },
+      "docs_url": "https://echo.epa.gov"
+    },
+    {
+      "id": "epa_tri",
+      "name": "EPA Toxic Release Inventory",
+      "agency": "EPA",
+      "program": "TRI — EPCRA Section 313",
+      "category": "contamination",
+      "service": {
+        "type": "rest_json",
+        "base_url": "https://data.epa.gov/efservice/TRI_FACILITY",
+        "bbox_filter": true,
+        "output_format": "JSON",
+        "notes": "Construct URL as /LATITUDE/>/lat_min/LATITUDE/</lat_max/LONGITUDE/>lon_min/LONGITUDE/</lon_max/COUNT/JSON"
+      },
+      "docs_url": "https://www.epa.gov/toxics-release-inventory-tri-program"
+    },
+    {
+      "id": "nrhp_historic",
+      "name": "National Register of Historic Places",
+      "agency": "NPS",
+      "program": "NRHP — Section 106",
+      "category": "cultural",
+      "regulatory_flags": ["NHPA Section 106", "36 CFR Part 800"],
+      "service": {
+        "type": "rest_json",
+        "base_url": "https://nrhpapi.nps.gov/api/register/places/geolocation",
+        "lat_param": "latitude",
+        "lon_param": "longitude",
+        "radius_param": "radius",
+        "extra_params": {"resulttype": "1"}
+      },
+      "docs_url": "https://www.nps.gov/subjects/nationalregister/index.htm"
+    },
+    {
+      "id": "gnis_cemeteries",
+      "name": "USGS GNIS Cemeteries",
+      "agency": "USGS",
+      "program": "Geographic Names Information System",
+      "category": "cultural",
+      "service": {
+        "type": "arcgis_mapserver",
+        "base_url": "https://carto.nationalmap.gov/arcgis/rest/services/structures/MapServer",
+        "layer_id": 18,
+        "query_fields": ["GNIS_ID", "FEATURE_NAME", "STATE_ALPHA", "COUNTY_NAME"],
+        "geometry_type": "point",
+        "feature_class": "Cemetery"
+      },
+      "docs_url": "https://www.usgs.gov/tools/geographic-names-information-system-gnis"
+    },
+    {
+      "id": "eia_transmission",
+      "name": "Electric Transmission Lines",
+      "agency": "EIA / HIFLD",
+      "program": "Homeland Infrastructure Foundation-Level Data",
+      "category": "utilities",
+      "service": {
+        "type": "arcgis_featureserver",
+        "base_url": "https://services1.arcgis.com/Hp6G80Pky0om7QvQ/arcgis/rest/services/Electric_Power_Transmission_Lines/FeatureServer",
+        "layer_id": 0,
+        "query_fields": ["VOLTAGE", "VOLT_CLASS", "TYPE", "STATUS", "OWNER", "NAICS_CODE"],
+        "geometry_type": "polyline"
+      },
+      "display": {
+        "color": "#f59e0b",
+        "opacity": 0.9,
+        "weight": 2
+      },
+      "docs_url": "https://hifld-geoplatform.hub.arcgis.com/datasets/electric-power-transmission-lines"
+    },
+    {
+      "id": "npms_pipelines",
+      "name": "Natural Gas & Petroleum Pipelines (NPMS)",
+      "agency": "PHMSA / HIFLD",
+      "program": "National Pipeline Mapping System",
+      "category": "utilities",
+      "service": {
+        "type": "arcgis_featureserver",
+        "base_url": "https://services1.arcgis.com/Hp6G80Pky0om7QvQ/arcgis/rest/services/Natural_Gas_Pipelines/FeatureServer",
+        "layer_id": 0,
+        "query_fields": ["TYPEPIPE", "OPERATOR", "PIPELINEID", "DIAMETER", "MATERIAL"],
+        "geometry_type": "polyline",
+        "notes": "HIFLD public layer. Full NPMS data (including hazardous liquids) requires PHMSA registration."
+      },
+      "display": {
+        "color": "#7c3aed",
+        "opacity": 0.9,
+        "weight": 2
+      },
+      "docs_url": "https://www.npms.phmsa.dot.gov"
+    },
+    {
+      "id": "pad_us",
+      "name": "Protected Areas Database (PAD-US)",
+      "agency": "USGS",
+      "program": "PAD-US 3.0",
+      "category": "regulatory",
+      "regulatory_flags": ["ESA", "NEPA"],
+      "service": {
+        "type": "arcgis_mapserver",
+        "base_url": "https://gis1.usgs.gov/arcgis/rest/services/PADUS3/PADUS3_0Combined/MapServer",
+        "layer_id": 0,
+        "query_fields": ["Unit_Nm", "Mang_Name", "Mang_Type", "Own_Type", "Des_Tp", "GIS_Acres", "Access"],
+        "geometry_type": "polygon"
+      },
+      "wms": {
+        "url": "https://gis1.usgs.gov/arcgis/services/PADUS3/PADUS3_0Combined/MapServer/WmsServer",
+        "layer": "0",
+        "format": "image/png",
+        "transparent": true
+      },
+      "display": {
+        "color": "#16a34a",
+        "opacity": 0.4
+      },
+      "docs_url": "https://www.usgs.gov/programs/gap-analysis-project/science/pad-us-data-download"
     }
   ]
 }
