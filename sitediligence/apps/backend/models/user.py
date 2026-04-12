@@ -1,48 +1,45 @@
-"""SQLAlchemy ORM models for User, Team, and TeamMember."""
+"""User and TeamMember ORM models."""
 
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, String
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, DateTime, Float, ForeignKey, String, Uuid
 from sqlalchemy.orm import relationship
 
-from models.project import Base
+from models.base import Base
 
 
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    email = Column(String(255), unique=True, nullable=False, index=True)
-    display_name = Column(String(255), nullable=False)
-    hashed_password = Column(String(255), nullable=False)
-    is_active = Column(String(10), default="true")
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id               = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email            = Column(String(255), unique=True, nullable=False, index=True)
+    hashed_password  = Column(String(255), nullable=False)
+    full_name        = Column(String(255), nullable=False, default="")
+    role             = Column(String(50),  nullable=False, default="user")   # user | admin
+    plan             = Column(String(50),  nullable=False, default="free")   # free | pro | enterprise
+    storage_quota_gb = Column(Float, nullable=False, default=5.0)
+    storage_used_gb  = Column(Float, nullable=False, default=0.0)
+    created_at       = Column(DateTime, nullable=False, default=datetime.utcnow)
+    last_login       = Column(DateTime, nullable=True)
 
-    team_memberships = relationship("TeamMember", back_populates="user")
-
-
-class Team(Base):
-    __tablename__ = "teams"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name = Column(String(255), nullable=False)
-    slug = Column(String(255), unique=True, nullable=False, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    members = relationship("TeamMember", back_populates="team", cascade="all, delete-orphan")
+    projects = relationship(
+        "Project", back_populates="owner", foreign_keys="Project.created_by",
+        cascade="all, delete-orphan",
+    )
+    memberships = relationship("TeamMember", back_populates="user", cascade="all, delete-orphan")
+    observations = relationship("Observation", back_populates="user")
+    audit_logs   = relationship("AuditLog", back_populates="user")
 
 
 class TeamMember(Base):
     __tablename__ = "team_members"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    team_id = Column(UUID(as_uuid=True), ForeignKey("teams.id"), nullable=False)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    role = Column(String(50), default="viewer")
-    joined_at = Column(DateTime, default=datetime.utcnow)
+    project_id = Column(Uuid(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"),
+                        primary_key=True)
+    user_id    = Column(Uuid(as_uuid=True), ForeignKey("users.id",    ondelete="CASCADE"),
+                        primary_key=True)
+    role       = Column(String(50), nullable=False, default="viewer")  # owner|admin|editor|viewer
 
-    team = relationship("Team", back_populates="members")
-    user = relationship("User", back_populates="team_memberships")
+    project = relationship("Project",    back_populates="members")
+    user    = relationship("User",       back_populates="memberships")

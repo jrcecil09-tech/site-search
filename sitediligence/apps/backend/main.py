@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from config.settings import get_settings
+from middleware.auth_middleware import AuthMiddleware
 from routers import (
     auth,
     batch,
@@ -26,9 +27,16 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
+    # Startup — verify DB is reachable
+    from config.database import engine
+    from sqlalchemy import text
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception as exc:
+        import logging
+        logging.warning(f"DB connection check failed at startup: {exc}")
     yield
-    # Shutdown
 
 
 app = FastAPI(
@@ -44,7 +52,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# ── CORS ──────────────────────────────────────────────────────────────────────
+# ── CORS (must be added before AuthMiddleware) ────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
@@ -52,6 +60,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ── JWT auth middleware ───────────────────────────────────────────────────────
+app.add_middleware(AuthMiddleware)
 
 # ── Routers ───────────────────────────────────────────────────────────────────
 API_PREFIX = "/api/v1"

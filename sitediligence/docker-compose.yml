@@ -1,6 +1,7 @@
 version: '3.9'
 
 services:
+  # ── Application ──────────────────────────────────────────────────────────────
   backend:
     build:
       context: ./apps/backend
@@ -8,25 +9,20 @@ services:
     ports:
       - '8000:8000'
     environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - STORAGE_BACKEND=${STORAGE_BACKEND}
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/sitediligence
+      - STORAGE_BACKEND=${STORAGE_BACKEND:-local}
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      - REDIS_URL=redis://redis:6379/0
     env_file:
       - .env
     volumes:
       - ./apps/backend:/app
     depends_on:
-      - db
-
-  db:
-    image: postgis/postgis:15-3.3
-    environment:
-      - POSTGRES_DB=${POSTGRES_DB:-sitediligence}
-      - POSTGRES_USER=${POSTGRES_USER:-postgres}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
-    ports:
-      - '5432:5432'
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
 
   web-app:
     build:
@@ -36,6 +32,7 @@ services:
       - '3000:3000'
     environment:
       - VITE_API_URL=${API_URL:-http://localhost:8000}
+    restart: unless-stopped
 
   website:
     build:
@@ -43,6 +40,58 @@ services:
       dockerfile: Dockerfile
     ports:
       - '3001:3001'
+    restart: unless-stopped
+
+  # ── Data stores ───────────────────────────────────────────────────────────────
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-sitediligence}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    volumes:
+      - redisdata:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  # ── Dev tools ─────────────────────────────────────────────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    profiles:
+      - dev                         # only starts with: docker compose --profile dev up
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL:-admin@sitediligence.local}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD:-admin}
+      - PGADMIN_CONFIG_SERVER_MODE=False
+    ports:
+      - '5050:80'
+    volumes:
+      - pgadmindata:/var/lib/pgadmin
+    depends_on:
+      - db
+    restart: unless-stopped
 
 volumes:
   pgdata:
+  redisdata:
+  pgadmindata:
