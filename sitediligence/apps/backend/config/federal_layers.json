@@ -1,0 +1,49 @@
+{
+  "_comment": "Stub — federal data layer definitions including WMS/REST endpoints and display config",
+  "layers": [
+    {
+      "id": "nwi-wetlands",
+      "name": "NWI Wetlands",
+      "agency": "USFWS",
+      "type": "wms",
+      "url": "https://www.fws.gov/wetlands/arcgis/services/Wetlands/MapServer/WMSServer",
+      "layers": "Wetlands",
+      "format": "image/png",
+      "color": "#27ae60",
+      "category": "environmental"
+    },
+    {
+      "id": "fema-flood",
+      "name": "FEMA Flood Zones",
+      "agency": "FEMA",
+      "type": "wms",
+      "url": "https://hazards.fema.gov/gis/nfhl/services/public/NFHLWMS/MapServer/WmsServer",
+      "layers": "Flood_Hazard_Zone",
+      "format": "image/png",
+      "color": "#3498db",
+      "category": "regulatory"
+    },
+    {
+      "id": "pad-us",
+      "name": "Protected Areas (PAD-US)",
+      "agency": "USGS",
+      "type": "wms",
+      "url": "https://gis1.usgs.gov/arcgis/services/PADUS3/PADUS3_0Combined/MapServer/WmsServer",
+      "layers": "0",
+      "format": "image/png",
+      "color": "#e74c3c",
+      "category": "regulatory"
+    },
+    {
+      "id": "nhd-streams",
+      "name": "NHD Streams",
+      "agency": "USGS",
+      "type": "wms",
+      "url": "https://basemap.nationalmap.gov/arcgis/services/USGSHydroCached/MapServer/WMSServer",
+      "layers": "0",
+      "format": "image/png",
+      "color": "#2980b9",
+      "category": "environmental"
+    }
+  ]
+}

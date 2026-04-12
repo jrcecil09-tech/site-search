@@ -1,0 +1,29 @@
+{
+  "_comment": "Stub — maps state FIPS codes to open data API endpoints for zoning/parcel data",
+  "jurisdictions": [
+    {
+      "state": "CA",
+      "fips": "06",
+      "name": "California",
+      "parcel_api": null,
+      "zoning_api": null,
+      "notes": "County-level data varies. Use county open data portals."
+    },
+    {
+      "state": "TX",
+      "fips": "48",
+      "name": "Texas",
+      "parcel_api": null,
+      "zoning_api": null,
+      "notes": "No statewide zoning. County CAD data available per county."
+    },
+    {
+      "state": "FL",
+      "fips": "12",
+      "name": "Florida",
+      "parcel_api": "https://www.floridagio.gov",
+      "zoning_api": null,
+      "notes": "FL has statewide parcel data via FDOT/FDEP."
+    }
+  ]
+}
