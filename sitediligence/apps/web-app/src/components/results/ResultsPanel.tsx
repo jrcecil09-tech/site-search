@@ -8,6 +8,7 @@ interface ResultItem {
   status: 'pending' | 'loading' | 'success' | 'error' | 'no_data'
   summary?: string
   featureCount?: number
+  children?: React.ReactNode
 }
 
 interface ResultsPanelProps {
@@ -55,7 +56,9 @@ export function ResultsPanel({ results, onRerun }: ResultsPanelProps) {
               status={r.status}
               summary={r.summary}
               featureCount={r.featureCount}
-            />
+            >
+              {r.children}
+            </ModuleCard>
           ))
         )}
       </div>
