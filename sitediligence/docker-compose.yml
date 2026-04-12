@@ -1,0 +1,48 @@
+version: '3.9'
+
+services:
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    ports:
+      - '8000:8000'
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - STORAGE_BACKEND=${STORAGE_BACKEND}
+    env_file:
+      - .env
+    volumes:
+      - ./apps/backend:/app
+    depends_on:
+      - db
+
+  db:
+    image: postgis/postgis:15-3.3
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-sitediligence}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  web-app:
+    build:
+      context: ./apps/web-app
+      dockerfile: Dockerfile
+    ports:
+      - '3000:3000'
+    environment:
+      - VITE_API_URL=${API_URL:-http://localhost:8000}
+
+  website:
+    build:
+      context: ./apps/website
+      dockerfile: Dockerfile
+    ports:
+      - '3001:3001'
+
+volumes:
+  pgdata:

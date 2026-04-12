@@ -1,0 +1,21 @@
+{
+  "name": "sitediligence",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev:backend": "cd apps/backend && python -m uvicorn main:app --reload",
+    "dev:web": "pnpm --filter @sitediligence/web-app dev",
+    "dev:website": "pnpm --filter @sitediligence/website dev",
+    "dev:all": "pnpm --parallel --filter \"./apps/**\" dev",
+    "build": "pnpm --recursive build",
+    "lint": "pnpm --recursive lint",
+    "typecheck": "pnpm --recursive typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

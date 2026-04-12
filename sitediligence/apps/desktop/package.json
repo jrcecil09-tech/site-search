@@ -1,0 +1,14 @@
+{
+  "name": "@sitediligence/desktop",
+  "version": "0.0.1",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "electron-forge start",
+    "build": "electron-forge make",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@sitediligence/shared": "workspace:*"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "@sitediligence/web-app",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.tsx"
+  },
+  "dependencies": {
+    "@sitediligence/shared": "workspace:*"
+  }
+}
