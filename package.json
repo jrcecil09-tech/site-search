@@ -1,0 +1,22 @@
+{
+  "name": "sitediligence",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev:backend": "pnpm --filter @sitediligence/backend dev",
+    "dev:web": "pnpm --filter @sitediligence/web-app dev",
+    "dev:website": "pnpm --filter @sitediligence/website dev",
+    "dev:all": "pnpm --parallel --filter './apps/*' dev",
+    "build": "pnpm --filter './packages/*' build && pnpm --filter './apps/*' build",
+    "lint": "pnpm -r lint",
+    "type-check": "pnpm -r type-check",
+    "clean": "pnpm -r exec rm -rf dist build .next .turbo"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=9"
+  }
+}
