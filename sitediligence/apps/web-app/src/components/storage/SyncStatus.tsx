@@ -17,7 +17,7 @@ export function SyncStatus() {
           <span className="text-xs text-gray-600">Syncing with {backend}…</span>
         </>
       )}
-      <WifiOff className="w-3 h-3 text-gray-300 ml-auto" title="Offline mode available" />
+      <WifiOff className="w-3 h-3 text-gray-300 ml-auto" aria-label="Offline mode available" />
     </div>
   )
 }
