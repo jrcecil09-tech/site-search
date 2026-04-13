@@ -17,6 +17,16 @@ export interface EpaMarker {
   detail?: string
 }
 
+export interface HistoricMarker {
+  lat: number
+  lon: number
+  name: string
+  category: 'nrhp' | 'cemetery'
+  color: string
+  detail?: string   // e.g. "District · Listed 1973"
+  near_flag: boolean
+}
+
 interface MapState {
   center: [number, number]
   zoom: number
@@ -24,6 +34,7 @@ interface MapState {
   selectedCoords: [number, number] | null
   layers: MapLayer[]
   epaMarkers: EpaMarker[]
+  historicMarkers: HistoricMarker[]
   setCenter: (center: [number, number]) => void
   setZoom: (zoom: number) => void
   setSelectedCoords: (coords: [number, number] | null) => void
@@ -31,16 +42,19 @@ interface MapState {
   setLayerOpacity: (layerId: string, opacity: number) => void
   setEpaMarkers: (markers: EpaMarker[]) => void
   clearEpaMarkers: () => void
+  setHistoricMarkers: (markers: HistoricMarker[]) => void
+  clearHistoricMarkers: () => void
 }
 
 const DEFAULT_LAYERS: MapLayer[] = [
-  { id: 'osm',       name: 'OpenStreetMap',    visible: true,  opacity: 1,   category: 'base' },
-  { id: 'satellite', name: 'Satellite',         visible: false, opacity: 1,   category: 'base' },
-  { id: 'wetlands',  name: 'NWI Wetlands',      visible: false, opacity: 0.7, category: 'environmental' },
-  { id: 'flood',     name: 'FEMA Flood Zones',  visible: false, opacity: 0.6, category: 'regulatory' },
-  { id: 'streams',   name: 'NHD Streams',        visible: false, opacity: 0.8, category: 'hydrography' },
+  { id: 'osm',       name: 'OpenStreetMap',    visible: true,  opacity: 1,    category: 'base' },
+  { id: 'satellite', name: 'Satellite',         visible: false, opacity: 1,    category: 'base' },
+  { id: 'wetlands',  name: 'NWI Wetlands',      visible: false, opacity: 0.7,  category: 'environmental' },
+  { id: 'flood',     name: 'FEMA Flood Zones',  visible: false, opacity: 0.6,  category: 'regulatory' },
+  { id: 'streams',   name: 'NHD Streams',        visible: false, opacity: 0.8,  category: 'hydrography' },
   { id: 'soils',     name: 'SSURGO Soils',        visible: false, opacity: 0.55, category: 'soils' },
   { id: 'epa',       name: 'EPA Facilities',       visible: false, opacity: 1,    category: 'regulatory' },
+  { id: 'historic',  name: 'Historic Properties',  visible: false, opacity: 1,    category: 'cultural' },
 ]
 
 export const useMapStore = create<MapState>()((set) => ({
@@ -50,6 +64,7 @@ export const useMapStore = create<MapState>()((set) => ({
   selectedCoords: null,
   layers: DEFAULT_LAYERS,
   epaMarkers: [],
+  historicMarkers: [],
 
   setCenter: (center) => set({ center }),
   setZoom: (zoom) => set({ zoom }),
@@ -70,6 +85,8 @@ export const useMapStore = create<MapState>()((set) => ({
       layers: s.layers.map((l) => (l.id === layerId ? { ...l, opacity } : l)),
     })),
 
-  setEpaMarkers: (markers) => set({ epaMarkers: markers }),
-  clearEpaMarkers: () => set({ epaMarkers: [] }),
+  setEpaMarkers:      (markers) => set({ epaMarkers: markers }),
+  clearEpaMarkers:    ()        => set({ epaMarkers: [] }),
+  setHistoricMarkers: (markers) => set({ historicMarkers: markers }),
+  clearHistoricMarkers: ()      => set({ historicMarkers: [] }),
 }))

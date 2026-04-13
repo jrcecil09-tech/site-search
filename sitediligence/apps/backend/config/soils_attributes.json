@@ -1,0 +1,130 @@
+{
+  "version": "1.0",
+  "description": "SSURGO attribute groups queried by the WSS soil module",
+
+  "groups": {
+    "A": {
+      "name": "Map Unit Overview",
+      "table": "mapunit",
+      "fields": ["mukey","musym","muname","mukind","farmlndcl","muacres","niccdcd","niccdcd_r","urbrecgr"],
+      "fatal": true
+    },
+    "B": {
+      "name": "Component Data",
+      "tables": ["component"],
+      "fields": ["mukey","compname","comppct_r","compkind","majcompflag","slope_r","slope_l","slope_h",
+                 "elev_r","hydrgrp","hydgrp","drainagecl","taxorder","taxsuborder","taxgrtgroup",
+                 "taxsubgrp","taxpartsize","taxreaction","taxtempcl","tfact","wei","weg","erocl","cokey"],
+      "fatal": true
+    },
+    "C": {
+      "name": "Soil Restrictions",
+      "tables": ["component","corestrictions"],
+      "fields": ["mukey","cokey","compname","reskind","reshard","resdept_r","resdepb_r","resthk_r"],
+      "flag_threshold_inches": 60,
+      "fatal": false
+    },
+    "D": {
+      "name": "Engineering Properties",
+      "tables": ["component","chorizon","chia"],
+      "fields": ["mukey","cokey","compname","hzname","hzdept_r","hzdepb_r",
+                 "sandtotal_r","silttotal_r","claytotal_r","om_r","dbmoist_r",
+                 "ksat_r","awc_r","lep_r","LL_r","pi_r","kwfact","kffact",
+                 "unified_class","aashto_class"],
+      "fatal": false
+    },
+    "E": {
+      "name": "Flooding and Ponding",
+      "tables": ["component","coflood","copontd"],
+      "fields": ["mukey","cokey","compname","flodfreqcl","floddurcl","floddept_r","pondfreqcl","ponddurcl","ponddept_r"],
+      "flag_freq": ["Frequent","Occasional"],
+      "fatal": false
+    },
+    "F": {
+      "name": "Hydric Soils",
+      "tables": ["component","cocrittom"],
+      "fields": ["mukey","cokey","compname","hydricrating","hydgrp","hydric_criterion"],
+      "fatal": false
+    },
+    "G": {
+      "name": "Corrosivity",
+      "tables": ["component","chorizon","chia"],
+      "fields": ["mukey","cokey","compname","hzname","hzdept_r","hzdepb_r","ph1to1h2o_r","corr_steel","corr_concrete"],
+      "fatal": false
+    },
+    "H": {
+      "name": "Bearing Capacity",
+      "tables": ["component","chorizon","chia"],
+      "fields": ["mukey","cokey","compname","hzname","hzdept_r","bearing_capacity","settlement_potential"],
+      "fatal": false
+    },
+    "I": {
+      "name": "Land Use Suitability",
+      "tables": ["component","cointerp"],
+      "rule_names": [
+        "SEE - Septic Tank Absorption Fields",
+        "DHS - Drainage - Lawns and Landscaping",
+        "ENG - Construction Materials - Embankments",
+        "ENG - Construction Materials - Road Fill",
+        "ENG - Dwellings Without Basements",
+        "ENG - Dwellings With Basements",
+        "ENG - Local Roads and Streets",
+        "ENG - Small Commercial Buildings",
+        "ENG - Shallow Excavations",
+        "ENG - Trench Sanitary Landfill",
+        "AGR - Irrigated Capability Class",
+        "FOR - Woodland Suitability - Timber Production",
+        "REC - Paths and Trails"
+      ],
+      "fatal": false
+    }
+  },
+
+  "flag_rules": {
+    "red": [
+      {"code":"hydric",          "field":"hydric",              "condition":"== true"},
+      {"code":"flood_risk",      "field":"flood_freq",          "condition":"in ['Frequent','Occasional']"},
+      {"code":"shallow_restrict","field":"depth_to_restrict",   "condition":"< 24"},
+      {"code":"bearing_low",     "field":"bearing_capacity_label","condition":"== 'Very low'"},
+      {"code":"corr_steel",      "field":"corr_steel",          "condition":"== 'High'"},
+      {"code":"shrink_swell",    "field":"lep_r",               "condition":"> 6"},
+      {"code":"organic_soils",   "field":"unified_class",       "condition":"in ['PT','OH','OL']"}
+    ],
+    "yellow": [
+      {"code":"restrict_moderate","field":"depth_to_restrict",  "condition":"between 24 60"},
+      {"code":"bearing_moderate", "field":"bearing_capacity_label","condition":"== 'Low'"},
+      {"code":"corr_concrete",    "field":"corr_concrete",      "condition":"== 'High'"},
+      {"code":"flood_rare",       "field":"flood_freq",         "condition":"== 'Rare'"},
+      {"code":"steep_slope",      "field":"slope_r",            "condition":"> 15"},
+      {"code":"prime_farmland",   "field":"farmland_class",     "condition":"contains 'Prime'"},
+      {"code":"low_perm",         "field":"ksat_r",             "condition":"< 0.1"}
+    ]
+  },
+
+  "wfs": {
+    "url": "https://sdmdataaccess.nrcs.usda.gov/Spatial/SDMWGS84Geographic.wfs",
+    "version": "1.1.0",
+    "typenames": {
+      "polygons": "MapunitPoly",
+      "lines":    "MapunitLine",
+      "points":   "MapunitPoint",
+      "boundary": "SurveyAreaBoundary"
+    }
+  },
+
+  "sda": {
+    "url": "https://sdmdataaccess.nrcs.usda.gov/tabular/post.rest",
+    "format": "JSON+PLUS"
+  },
+
+  "wms": {
+    "url":     "https://SDMDataAccess.sc.egov.usda.gov/Spatial/SDM.wms",
+    "version": "1.1.1",
+    "layers": {
+      "mapunits": "mapunitpoly",
+      "lines":    "mapunitline",
+      "points":   "mapunitpoint"
+    },
+    "default_opacity": 0.55
+  }
+}

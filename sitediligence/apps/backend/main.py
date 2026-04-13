@@ -19,6 +19,7 @@ from routers import (
     mobile,
     projects,
     queries,
+    soils_wss,
     storage,
 )
 
@@ -70,6 +71,7 @@ API_PREFIX = "/api/v1"
 app.include_router(auth.router,         prefix=f"{API_PREFIX}/auth",         tags=["auth"])
 app.include_router(projects.router,     prefix=f"{API_PREFIX}/projects",     tags=["projects"])
 app.include_router(queries.router,      prefix=f"{API_PREFIX}/queries",      tags=["queries"])
+app.include_router(soils_wss.router,    prefix=f"{API_PREFIX}/soils",        tags=["soils-wss"])
 app.include_router(exports.router,      prefix=f"{API_PREFIX}/exports",      tags=["exports"])
 app.include_router(storage.router,      prefix=f"{API_PREFIX}/storage",      tags=["storage"])
 app.include_router(mobile.router,       prefix=f"{API_PREFIX}/mobile",       tags=["mobile"])

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, MapPin, FileText, Loader2 } from 'lucide-react'
 import { useProjectStore } from '@/store/projectStore'
-import { useMapStore, EpaMarker } from '@/store/mapStore'
+import { useMapStore, EpaMarker, HistoricMarker } from '@/store/mapStore'
 import { SiteMap } from '@/components/map/SiteMap'
 import { ResultsPanel } from '@/components/results/ResultsPanel'
 import { WetlandsSummaryCard } from '@/components/results/WetlandsSummaryCard'
@@ -11,6 +11,7 @@ import { StreamsSummaryCard } from '@/components/results/StreamsSummaryCard'
 import { ElevationSummaryCard } from '@/components/results/ElevationSummaryCard'
 import { SoilsSummaryCard } from '@/components/results/SoilsSummaryCard'
 import { EpaSummaryCard } from '@/components/results/EpaSummaryCard'
+import { HistoricSummaryCard } from '@/components/results/HistoricSummaryCard'
 import { api } from '@/services/api'
 
 interface ResultItem {
@@ -129,6 +130,29 @@ function buildResultItems(apiResults: any[]): ResultItem[] {
       }
     }
 
+    if (r.query_type === 'historic') {
+      const d = r.data
+      const nrhpCount = d?.summary?.nrhp_count ?? 0
+      const cemCount  = d?.summary?.cemetery_count ?? 0
+      const nrhpNear  = d?.summary?.nrhp_near_count ?? 0
+      const cemNear   = d?.summary?.cemetery_near_count ?? 0
+      const hasData   = nrhpCount + cemCount > 0
+      const flagFt    = d?.display?.flag_distance_ft ?? 500
+      return {
+        id: 'historic',
+        title: 'Historic & Archaeological',
+        status: r.status === 'success' ? (hasData ? 'success' : 'no_data') : 'error',
+        summary: hasData
+          ? [
+              nrhpCount > 0 && `${nrhpCount} NRHP${nrhpNear > 0 ? ` (${nrhpNear} within ${flagFt} ft)` : ''}`,
+              cemCount  > 0 && `${cemCount} cemetery${cemCount !== 1 ? 's' : ''}${cemNear > 0 ? ` (${cemNear} adj.)` : ''}`,
+            ].filter(Boolean).join(' · ')
+          : 'No NRHP properties or cemeteries found',
+        featureCount: nrhpCount + cemCount,
+        children: hasData ? <HistoricSummaryCard data={d} /> : undefined,
+      }
+    }
+
     return {
       id: r.query_type,
       title: r.query_type,
@@ -144,24 +168,28 @@ export default function ProjectScreen() {
   const [results, setResults] = useState<ResultItem[]>([])
   const [loading, setLoading] = useState(false)
 
-  const setCenter      = useMapStore((s) => s.setCenter)
-  const setZoom        = useMapStore((s) => s.setZoom)
-  const toggleLayer    = useMapStore((s) => s.toggleLayer)
-  const layers         = useMapStore((s) => s.layers)
-  const setEpaMarkers  = useMapStore((s) => s.setEpaMarkers)
-  const clearEpaMarkers = useMapStore((s) => s.clearEpaMarkers)
+  const setCenter           = useMapStore((s) => s.setCenter)
+  const setZoom             = useMapStore((s) => s.setZoom)
+  const toggleLayer         = useMapStore((s) => s.toggleLayer)
+  const layers              = useMapStore((s) => s.layers)
+  const setEpaMarkers       = useMapStore((s) => s.setEpaMarkers)
+  const clearEpaMarkers     = useMapStore((s) => s.clearEpaMarkers)
+  const setHistoricMarkers  = useMapStore((s) => s.setHistoricMarkers)
+  const clearHistoricMarkers = useMapStore((s) => s.clearHistoricMarkers)
 
   async function handleRunQueries() {
     if (loading) return
     setLoading(true)
     clearEpaMarkers()
+    clearHistoricMarkers()
     setResults([
-      { id: 'wetlands',    title: 'NWI Wetlands',     status: 'loading' },
-      { id: 'flood_zones', title: 'FEMA Flood Zones',  status: 'loading' },
-      { id: 'streams',     title: 'NHD Streams',       status: 'loading' },
-      { id: 'soils',       title: 'SSURGO Soils',      status: 'loading' },
-      { id: 'epa',         title: 'EPA Records',       status: 'loading' },
-      { id: 'elevation',   title: '3DEP Elevation',    status: 'loading' },
+      { id: 'wetlands',    title: 'NWI Wetlands',              status: 'loading' },
+      { id: 'flood_zones', title: 'FEMA Flood Zones',           status: 'loading' },
+      { id: 'streams',     title: 'NHD Streams',                status: 'loading' },
+      { id: 'soils',       title: 'SSURGO Soils',               status: 'loading' },
+      { id: 'epa',         title: 'EPA Records',                status: 'loading' },
+      { id: 'elevation',   title: '3DEP Elevation',             status: 'loading' },
+      { id: 'historic',    title: 'Historic & Archaeological',  status: 'loading' },
     ])
 
     try {
@@ -178,18 +206,20 @@ export default function ProjectScreen() {
 
       // Enable map overlays for returned query types
       const returnedTypes = new Set(res.data.results.map((r: any) => r.query_type))
-      const wetlandsVisible = layers.find((l) => l.id === 'wetlands')?.visible
-      const floodVisible    = layers.find((l) => l.id === 'flood')?.visible
-      const streamsVisible  = layers.find((l) => l.id === 'streams')?.visible
-      const soilsVisible    = layers.find((l) => l.id === 'soils')?.visible
-      const epaVisible      = layers.find((l) => l.id === 'epa')?.visible
+      const wetlandsVisible  = layers.find((l) => l.id === 'wetlands')?.visible
+      const floodVisible     = layers.find((l) => l.id === 'flood')?.visible
+      const streamsVisible   = layers.find((l) => l.id === 'streams')?.visible
+      const soilsVisible     = layers.find((l) => l.id === 'soils')?.visible
+      const epaVisible       = layers.find((l) => l.id === 'epa')?.visible
+      const historicVisible  = layers.find((l) => l.id === 'historic')?.visible
       if (returnedTypes.has('wetlands')    && !wetlandsVisible) toggleLayer('wetlands')
       if (returnedTypes.has('flood_zones') && !floodVisible)    toggleLayer('flood')
       if (returnedTypes.has('streams')     && !streamsVisible)  toggleLayer('streams')
       if (returnedTypes.has('soils')       && !soilsVisible)    toggleLayer('soils')
       if (returnedTypes.has('epa')         && !epaVisible)      toggleLayer('epa')
+      if (returnedTypes.has('historic')    && !historicVisible) toggleLayer('historic')
 
-      // Build EPA point markers for map display
+      // Build EPA point markers
       const epaResult = res.data.results.find((r: any) => r.query_type === 'epa')
       if (epaResult?.status === 'success' && epaResult.data) {
         const d = epaResult.data
@@ -216,14 +246,43 @@ export default function ProjectScreen() {
         ]
         setEpaMarkers(markers)
       }
+
+      // Build historic point markers
+      const historicResult = res.data.results.find((r: any) => r.query_type === 'historic')
+      if (historicResult?.status === 'success' && historicResult.data) {
+        const d = historicResult.data
+        const markers: HistoricMarker[] = [
+          ...(d.nrhp_properties || []).filter((p: any) => p.lat && p.lon).map((p: any) => ({
+            lat:       p.lat,
+            lon:       p.lon,
+            name:      p.name,
+            category:  'nrhp' as const,
+            color:     d.display.color_nrhp,
+            detail:    [p.category, p.date_listed ? `Listed ${p.date_listed.slice(0, 4)}` : null]
+                         .filter(Boolean).join(' · ') || undefined,
+            near_flag: p.near_flag ?? false,
+          })),
+          ...(d.cemeteries || []).filter((c: any) => c.lat && c.lon).map((c: any) => ({
+            lat:       c.lat,
+            lon:       c.lon,
+            name:      c.name,
+            category:  'cemetery' as const,
+            color:     d.display.color_cemetery,
+            detail:    c.gnis_id ? `GNIS ${c.gnis_id}` : undefined,
+            near_flag: c.near_flag ?? false,
+          })),
+        ]
+        setHistoricMarkers(markers)
+      }
     } catch {
       setResults([
-        { id: 'wetlands',    title: 'NWI Wetlands',    status: 'error', summary: 'Query failed' },
-        { id: 'flood_zones', title: 'FEMA Flood Zones', status: 'error', summary: 'Query failed' },
-        { id: 'streams',     title: 'NHD Streams',      status: 'error', summary: 'Query failed' },
-        { id: 'soils',       title: 'SSURGO Soils',     status: 'error', summary: 'Query failed' },
-        { id: 'epa',         title: 'EPA Records',      status: 'error', summary: 'Query failed' },
-        { id: 'elevation',   title: '3DEP Elevation',   status: 'error', summary: 'Query failed' },
+        { id: 'wetlands',    title: 'NWI Wetlands',             status: 'error', summary: 'Query failed' },
+        { id: 'flood_zones', title: 'FEMA Flood Zones',          status: 'error', summary: 'Query failed' },
+        { id: 'streams',     title: 'NHD Streams',               status: 'error', summary: 'Query failed' },
+        { id: 'soils',       title: 'SSURGO Soils',              status: 'error', summary: 'Query failed' },
+        { id: 'epa',         title: 'EPA Records',               status: 'error', summary: 'Query failed' },
+        { id: 'elevation',   title: '3DEP Elevation',            status: 'error', summary: 'Query failed' },
+        { id: 'historic',    title: 'Historic & Archaeological', status: 'error', summary: 'Query failed' },
       ])
     } finally {
       setLoading(false)

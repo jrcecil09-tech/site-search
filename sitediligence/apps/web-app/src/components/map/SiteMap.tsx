@@ -17,17 +17,19 @@ interface SiteMapProps {
 }
 
 export function SiteMap({ className, onLocationSelect }: SiteMapProps) {
-  const center   = useMapStore((s) => s.center)
-  const zoom     = useMapStore((s) => s.zoom)
-  const selected = useMapStore((s) => s.selectedCoords)
-  const layers   = useMapStore((s) => s.layers)
+  const center          = useMapStore((s) => s.center)
+  const zoom            = useMapStore((s) => s.zoom)
+  const selected        = useMapStore((s) => s.selectedCoords)
+  const layers          = useMapStore((s) => s.layers)
+  const epaMarkers      = useMapStore((s) => s.epaMarkers)
+  const historicMarkers = useMapStore((s) => s.historicMarkers)
 
   const wetlandsLayer = layers.find((l) => l.id === 'wetlands')
   const floodLayer    = layers.find((l) => l.id === 'flood')
   const streamsLayer  = layers.find((l) => l.id === 'streams')
   const soilsLayer    = layers.find((l) => l.id === 'soils')
   const epaLayer      = layers.find((l) => l.id === 'epa')
-  const epaMarkers    = useMapStore((s) => s.epaMarkers)
+  const historicLayer = layers.find((l) => l.id === 'historic')
 
   return (
     <MapContainer
@@ -90,9 +92,10 @@ export function SiteMap({ className, onLocationSelect }: SiteMapProps) {
         />
       )}
 
+      {/* EPA point markers */}
       {epaLayer?.visible && epaMarkers.map((m, i) => (
         <CircleMarker
-          key={i}
+          key={`epa-${i}`}
           center={[m.lat, m.lon]}
           radius={m.category === 'superfund' ? 10 : 7}
           pathOptions={{
@@ -111,6 +114,36 @@ export function SiteMap({ className, onLocationSelect }: SiteMapProps) {
                  m.category === 'tri'       ? 'TRI Toxic Release' : 'EPA Facility'}
               </div>
               {m.detail && <div className="text-gray-600">{m.detail}</div>}
+            </div>
+          </Popup>
+        </CircleMarker>
+      ))}
+
+      {/* Historic & archaeological markers */}
+      {historicLayer?.visible && historicMarkers.map((m, i) => (
+        <CircleMarker
+          key={`hist-${i}`}
+          center={[m.lat, m.lon]}
+          radius={m.category === 'nrhp' ? 9 : 7}
+          pathOptions={{
+            color: m.color,
+            fillColor: m.color,
+            fillOpacity: m.near_flag ? 0.9 : 0.65,
+            weight: m.near_flag ? 2.5 : 1.5,
+          }}
+        >
+          <Popup>
+            <div className="text-xs space-y-0.5">
+              <div className="font-semibold">{m.name}</div>
+              <div className="uppercase text-gray-500 tracking-wide text-[10px]">
+                {m.category === 'nrhp' ? 'NRHP Listed Property' : 'Cemetery (USGS GNIS)'}
+              </div>
+              {m.detail && <div className="text-gray-600">{m.detail}</div>}
+              {m.near_flag && (
+                <div className="text-amber-700 font-medium text-[10px]">
+                  ⚠ Within 500 ft — review required
+                </div>
+              )}
             </div>
           </Popup>
         </CircleMarker>
