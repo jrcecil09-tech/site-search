@@ -10,7 +10,11 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from services.auth import decode_token
 
 # Exact paths that do not require authentication
-PUBLIC_PATHS = frozenset({"/", "/health", "/docs", "/redoc", "/openapi.json"})
+PUBLIC_PATHS = frozenset({
+    "/", "/health", "/docs", "/redoc", "/openapi.json",
+    "/api/v1/queries/demo",       # public fixture endpoint — no auth needed
+    "/api/v1/queries/available",  # read-only list
+})
 # Path prefixes that do not require authentication
 PUBLIC_PREFIXES = ("/api/v1/auth/",)
 
