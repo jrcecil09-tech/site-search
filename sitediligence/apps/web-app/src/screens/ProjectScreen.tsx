@@ -8,6 +8,7 @@ import { ResultsPanel } from '@/components/results/ResultsPanel'
 import { WetlandsSummaryCard } from '@/components/results/WetlandsSummaryCard'
 import { FloodZonesSummaryCard } from '@/components/results/FloodZonesSummaryCard'
 import { StreamsSummaryCard } from '@/components/results/StreamsSummaryCard'
+import { ElevationSummaryCard } from '@/components/results/ElevationSummaryCard'
 import { api } from '@/services/api'
 
 interface ResultItem {
@@ -68,6 +69,22 @@ function buildResultItems(apiResults: any[]): ResultItem[] {
           : `No streams within ${d?.buffer_ft ?? 500} ft`,
         featureCount: total,
         children: hasStreams ? <StreamsSummaryCard data={d} /> : undefined,
+      }
+    }
+
+    if (r.query_type === 'elevation') {
+      const d = r.data
+      const ft = d?.centroid_elevation_ft
+      const relief = d?.stats?.relief_ft
+      return {
+        id: 'elevation',
+        title: '3DEP Elevation',
+        status: r.status === 'success' ? (ft !== null ? 'success' : 'no_data') : 'error',
+        summary: ft !== null
+          ? `${ft?.toFixed(0)} ft · ${d?.centroid_elevation_m?.toFixed(0)} m · relief ${relief?.toFixed(0)} ft`
+          : 'No elevation data',
+        featureCount: d?.sample_count,
+        children: ft !== null ? <ElevationSummaryCard data={d} /> : undefined,
       }
     }
 
