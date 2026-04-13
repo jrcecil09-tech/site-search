@@ -24,6 +24,7 @@ export function SiteMap({ className, onLocationSelect }: SiteMapProps) {
 
   const wetlandsLayer = layers.find((l) => l.id === 'wetlands')
   const floodLayer    = layers.find((l) => l.id === 'flood')
+  const streamsLayer  = layers.find((l) => l.id === 'streams')
 
   return (
     <MapContainer
@@ -58,6 +59,18 @@ export function SiteMap({ className, onLocationSelect }: SiteMapProps) {
           transparent
           opacity={floodLayer.opacity}
           attribution='<a href="https://www.fema.gov/flood-maps">FEMA NFHL</a>'
+          version="1.3.0"
+        />
+      )}
+
+      {streamsLayer?.visible && (
+        <WMSTileLayer
+          url="https://hydro.nationalmap.gov/arcgis/services/NHDPlus_HR/MapServer/WMSServer"
+          layers="2,10"
+          format="image/png"
+          transparent
+          opacity={streamsLayer.opacity}
+          attribution='<a href="https://www.usgs.gov/national-hydrography">USGS NHD</a>'
           version="1.3.0"
         />
       )}

@@ -7,6 +7,7 @@ import { SiteMap } from '@/components/map/SiteMap'
 import { ResultsPanel } from '@/components/results/ResultsPanel'
 import { WetlandsSummaryCard } from '@/components/results/WetlandsSummaryCard'
 import { FloodZonesSummaryCard } from '@/components/results/FloodZonesSummaryCard'
+import { StreamsSummaryCard } from '@/components/results/StreamsSummaryCard'
 import { api } from '@/services/api'
 
 interface ResultItem {
@@ -54,6 +55,22 @@ function buildResultItems(apiResults: any[]): ResultItem[] {
       }
     }
 
+    if (r.query_type === 'streams') {
+      const d = r.data
+      const hasStreams = d?.streams_present === true
+      const total = (d?.flowline_count ?? 0) + (d?.waterbody_count ?? 0)
+      return {
+        id: 'streams',
+        title: 'NHD Streams',
+        status: r.status === 'success' ? (hasStreams ? 'success' : 'no_data') : 'error',
+        summary: hasStreams
+          ? `${d.flowline_count} flowlines · ${d.summary.total_length_km.toFixed(1)} km · max order ${d.summary.max_stream_order}`
+          : `No streams within ${d?.buffer_ft ?? 500} ft`,
+        featureCount: total,
+        children: hasStreams ? <StreamsSummaryCard data={d} /> : undefined,
+      }
+    }
+
     return {
       id: r.query_type,
       title: r.query_type,
@@ -87,15 +104,21 @@ export default function ProjectScreen() {
       const items = buildResultItems(res.data.results)
       setResults(items)
 
-      // Pan map to Louisiana demo site
-      setCenter([30.0, -90.0])
-      setZoom(12)
+      // Pan map to demo site bbox center
+      const bbox = res.data.bbox as [number, number, number, number]
+      const lat = (bbox[1] + bbox[3]) / 2
+      const lon = (bbox[0] + bbox[2]) / 2
+      setCenter([lat, lon])
+      setZoom(13)
 
-      // Enable map overlays if they are currently hidden
+      // Enable map overlays for returned query types
+      const returnedTypes = new Set(res.data.results.map((r: any) => r.query_type))
       const wetlandsVisible = layers.find((l) => l.id === 'wetlands')?.visible
       const floodVisible    = layers.find((l) => l.id === 'flood')?.visible
-      if (!wetlandsVisible) toggleLayer('wetlands')
-      if (!floodVisible)    toggleLayer('flood')
+      const streamsVisible  = layers.find((l) => l.id === 'streams')?.visible
+      if (returnedTypes.has('wetlands')    && !wetlandsVisible) toggleLayer('wetlands')
+      if (returnedTypes.has('flood_zones') && !floodVisible)    toggleLayer('flood')
+      if (returnedTypes.has('streams')     && !streamsVisible)  toggleLayer('streams')
     } catch {
       setResults([
         { id: 'wetlands',    title: 'NWI Wetlands',    status: 'error', summary: 'Query failed' },
