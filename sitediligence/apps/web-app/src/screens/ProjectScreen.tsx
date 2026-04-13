@@ -9,6 +9,7 @@ import { WetlandsSummaryCard } from '@/components/results/WetlandsSummaryCard'
 import { FloodZonesSummaryCard } from '@/components/results/FloodZonesSummaryCard'
 import { StreamsSummaryCard } from '@/components/results/StreamsSummaryCard'
 import { ElevationSummaryCard } from '@/components/results/ElevationSummaryCard'
+import { SoilsSummaryCard } from '@/components/results/SoilsSummaryCard'
 import { api } from '@/services/api'
 
 interface ResultItem {
@@ -72,6 +73,22 @@ function buildResultItems(apiResults: any[]): ResultItem[] {
       }
     }
 
+    if (r.query_type === 'soils') {
+      const d = r.data
+      const hasUnits = (d?.map_unit_count ?? 0) > 0
+      const hydric   = d?.hydric_present === true
+      return {
+        id: 'soils',
+        title: 'SSURGO Soils',
+        status: r.status === 'success' ? (hasUnits ? 'success' : 'no_data') : 'error',
+        summary: hasUnits
+          ? `${d.map_unit_count} map units${hydric ? ' · Hydric soils present' : ''}`
+          : 'No soil data found',
+        featureCount: d?.map_unit_count,
+        children: hasUnits ? <SoilsSummaryCard data={d} /> : undefined,
+      }
+    }
+
     if (r.query_type === 'elevation') {
       const d = r.data
       const ft = d?.centroid_elevation_ft
@@ -114,6 +131,9 @@ export default function ProjectScreen() {
     setResults([
       { id: 'wetlands',    title: 'NWI Wetlands',     status: 'loading' },
       { id: 'flood_zones', title: 'FEMA Flood Zones',  status: 'loading' },
+      { id: 'streams',     title: 'NHD Streams',       status: 'loading' },
+      { id: 'soils',       title: 'SSURGO Soils',      status: 'loading' },
+      { id: 'elevation',   title: '3DEP Elevation',    status: 'loading' },
     ])
 
     try {
@@ -133,13 +153,18 @@ export default function ProjectScreen() {
       const wetlandsVisible = layers.find((l) => l.id === 'wetlands')?.visible
       const floodVisible    = layers.find((l) => l.id === 'flood')?.visible
       const streamsVisible  = layers.find((l) => l.id === 'streams')?.visible
+      const soilsVisible    = layers.find((l) => l.id === 'soils')?.visible
       if (returnedTypes.has('wetlands')    && !wetlandsVisible) toggleLayer('wetlands')
       if (returnedTypes.has('flood_zones') && !floodVisible)    toggleLayer('flood')
       if (returnedTypes.has('streams')     && !streamsVisible)  toggleLayer('streams')
+      if (returnedTypes.has('soils')       && !soilsVisible)    toggleLayer('soils')
     } catch {
       setResults([
         { id: 'wetlands',    title: 'NWI Wetlands',    status: 'error', summary: 'Query failed' },
         { id: 'flood_zones', title: 'FEMA Flood Zones', status: 'error', summary: 'Query failed' },
+        { id: 'streams',     title: 'NHD Streams',      status: 'error', summary: 'Query failed' },
+        { id: 'soils',       title: 'SSURGO Soils',     status: 'error', summary: 'Query failed' },
+        { id: 'elevation',   title: '3DEP Elevation',   status: 'error', summary: 'Query failed' },
       ])
     } finally {
       setLoading(false)

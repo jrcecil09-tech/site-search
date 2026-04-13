@@ -27,6 +27,7 @@ const DEFAULT_LAYERS: MapLayer[] = [
   { id: 'wetlands',  name: 'NWI Wetlands',      visible: false, opacity: 0.7, category: 'environmental' },
   { id: 'flood',     name: 'FEMA Flood Zones',  visible: false, opacity: 0.6, category: 'regulatory' },
   { id: 'streams',   name: 'NHD Streams',        visible: false, opacity: 0.8, category: 'hydrography' },
+  { id: 'soils',     name: 'SSURGO Soils',        visible: false, opacity: 0.55, category: 'soils' },
 ]
 
 export const useMapStore = create<MapState>()((set) => ({

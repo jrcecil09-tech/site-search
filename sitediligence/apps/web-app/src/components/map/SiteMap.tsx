@@ -25,6 +25,7 @@ export function SiteMap({ className, onLocationSelect }: SiteMapProps) {
   const wetlandsLayer = layers.find((l) => l.id === 'wetlands')
   const floodLayer    = layers.find((l) => l.id === 'flood')
   const streamsLayer  = layers.find((l) => l.id === 'streams')
+  const soilsLayer    = layers.find((l) => l.id === 'soils')
 
   return (
     <MapContainer
@@ -72,6 +73,18 @@ export function SiteMap({ className, onLocationSelect }: SiteMapProps) {
           opacity={streamsLayer.opacity}
           attribution='<a href="https://www.usgs.gov/national-hydrography">USGS NHD</a>'
           version="1.3.0"
+        />
+      )}
+
+      {soilsLayer?.visible && (
+        <WMSTileLayer
+          url="https://SDMDataAccess.sc.egov.usda.gov/Spatial/SDM.wms"
+          layers="mapunitpoly"
+          format="image/png"
+          transparent
+          opacity={soilsLayer.opacity}
+          attribution='<a href="https://www.nrcs.usda.gov/resources/data-and-reports/web-soil-survey">USDA NRCS WSS</a>'
+          version="1.1.1"
         />
       )}
 
