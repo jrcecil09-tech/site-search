@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, MapPin, FileText, Loader2 } from 'lucide-react'
 import { useProjectStore } from '@/store/projectStore'
-import { useMapStore } from '@/store/mapStore'
+import { useMapStore, EpaMarker } from '@/store/mapStore'
 import { SiteMap } from '@/components/map/SiteMap'
 import { ResultsPanel } from '@/components/results/ResultsPanel'
 import { WetlandsSummaryCard } from '@/components/results/WetlandsSummaryCard'
@@ -10,6 +10,7 @@ import { FloodZonesSummaryCard } from '@/components/results/FloodZonesSummaryCar
 import { StreamsSummaryCard } from '@/components/results/StreamsSummaryCard'
 import { ElevationSummaryCard } from '@/components/results/ElevationSummaryCard'
 import { SoilsSummaryCard } from '@/components/results/SoilsSummaryCard'
+import { EpaSummaryCard } from '@/components/results/EpaSummaryCard'
 import { api } from '@/services/api'
 
 interface ResultItem {
@@ -73,6 +74,29 @@ function buildResultItems(apiResults: any[]): ResultItem[] {
       }
     }
 
+    if (r.query_type === 'epa') {
+      const d = r.data
+      const hasData = (d?.summary?.frs_count ?? 0) + (d?.summary?.superfund_count ?? 0) +
+                      (d?.summary?.rcra_count ?? 0) + (d?.summary?.tri_count ?? 0) > 0
+      const sfNear  = d?.summary?.superfund_near_count ?? 0
+      const viol    = d?.summary?.echo_violations ?? 0
+      return {
+        id: 'epa',
+        title: 'EPA Records',
+        status: r.status === 'success' ? (hasData ? 'success' : 'no_data') : 'error',
+        summary: hasData
+          ? [
+              d.summary.superfund_count > 0 && `${d.summary.superfund_count} Superfund${sfNear > 0 ? ` (${sfNear} near)` : ''}`,
+              d.summary.rcra_count > 0      && `${d.summary.rcra_count} RCRA`,
+              d.summary.tri_count > 0       && `${d.summary.tri_count} TRI`,
+              viol > 0                      && `${viol} violation${viol !== 1 ? 's' : ''}`,
+            ].filter(Boolean).join(' · ')
+          : 'No EPA records found',
+        featureCount: (d?.summary?.frs_count ?? 0) + (d?.summary?.superfund_count ?? 0),
+        children: hasData ? <EpaSummaryCard data={d} /> : undefined,
+      }
+    }
+
     if (r.query_type === 'soils') {
       const d = r.data
       const hasUnits = (d?.map_unit_count ?? 0) > 0
@@ -120,19 +144,23 @@ export default function ProjectScreen() {
   const [results, setResults] = useState<ResultItem[]>([])
   const [loading, setLoading] = useState(false)
 
-  const setCenter  = useMapStore((s) => s.setCenter)
-  const setZoom    = useMapStore((s) => s.setZoom)
-  const toggleLayer = useMapStore((s) => s.toggleLayer)
-  const layers     = useMapStore((s) => s.layers)
+  const setCenter      = useMapStore((s) => s.setCenter)
+  const setZoom        = useMapStore((s) => s.setZoom)
+  const toggleLayer    = useMapStore((s) => s.toggleLayer)
+  const layers         = useMapStore((s) => s.layers)
+  const setEpaMarkers  = useMapStore((s) => s.setEpaMarkers)
+  const clearEpaMarkers = useMapStore((s) => s.clearEpaMarkers)
 
   async function handleRunQueries() {
     if (loading) return
     setLoading(true)
+    clearEpaMarkers()
     setResults([
       { id: 'wetlands',    title: 'NWI Wetlands',     status: 'loading' },
       { id: 'flood_zones', title: 'FEMA Flood Zones',  status: 'loading' },
       { id: 'streams',     title: 'NHD Streams',       status: 'loading' },
       { id: 'soils',       title: 'SSURGO Soils',      status: 'loading' },
+      { id: 'epa',         title: 'EPA Records',       status: 'loading' },
       { id: 'elevation',   title: '3DEP Elevation',    status: 'loading' },
     ])
 
@@ -154,16 +182,47 @@ export default function ProjectScreen() {
       const floodVisible    = layers.find((l) => l.id === 'flood')?.visible
       const streamsVisible  = layers.find((l) => l.id === 'streams')?.visible
       const soilsVisible    = layers.find((l) => l.id === 'soils')?.visible
+      const epaVisible      = layers.find((l) => l.id === 'epa')?.visible
       if (returnedTypes.has('wetlands')    && !wetlandsVisible) toggleLayer('wetlands')
       if (returnedTypes.has('flood_zones') && !floodVisible)    toggleLayer('flood')
       if (returnedTypes.has('streams')     && !streamsVisible)  toggleLayer('streams')
       if (returnedTypes.has('soils')       && !soilsVisible)    toggleLayer('soils')
+      if (returnedTypes.has('epa')         && !epaVisible)      toggleLayer('epa')
+
+      // Build EPA point markers for map display
+      const epaResult = res.data.results.find((r: any) => r.query_type === 'epa')
+      if (epaResult?.status === 'success' && epaResult.data) {
+        const d = epaResult.data
+        const markers: EpaMarker[] = [
+          ...(d.superfund_sites  || []).filter((s: any) => s.lat && s.lon).map((s: any) => ({
+            lat: s.lat, lon: s.lon, name: s.name,
+            category: 'superfund' as const, color: d.display.color_superfund,
+            detail: s.distance_miles != null ? `${s.distance_miles.toFixed(2)} mi from site` : undefined,
+          })),
+          ...(d.rcra_handlers    || []).filter((r: any) => r.lat && r.lon).map((r: any) => ({
+            lat: r.lat, lon: r.lon, name: r.name,
+            category: 'rcra' as const, color: d.display.color_rcra,
+          })),
+          ...(d.tri_facilities   || []).filter((t: any) => t.lat && t.lon).map((t: any) => ({
+            lat: t.lat, lon: t.lon, name: t.name,
+            category: 'tri' as const, color: d.display.color_tri,
+            detail: t.sic_code ? `SIC ${t.sic_code}` : undefined,
+          })),
+          ...(d.frs_facilities   || []).filter((f: any) => f.lat && f.lon).map((f: any) => ({
+            lat: f.lat, lon: f.lon, name: f.name,
+            category: 'frs' as const, color: d.display.color_frs,
+            detail: (f.programs || []).join(', ') || undefined,
+          })),
+        ]
+        setEpaMarkers(markers)
+      }
     } catch {
       setResults([
         { id: 'wetlands',    title: 'NWI Wetlands',    status: 'error', summary: 'Query failed' },
         { id: 'flood_zones', title: 'FEMA Flood Zones', status: 'error', summary: 'Query failed' },
         { id: 'streams',     title: 'NHD Streams',      status: 'error', summary: 'Query failed' },
         { id: 'soils',       title: 'SSURGO Soils',     status: 'error', summary: 'Query failed' },
+        { id: 'epa',         title: 'EPA Records',      status: 'error', summary: 'Query failed' },
         { id: 'elevation',   title: '3DEP Elevation',   status: 'error', summary: 'Query failed' },
       ])
     } finally {

@@ -1,4 +1,4 @@
-import { MapContainer, TileLayer, WMSTileLayer, Marker, Popup, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, WMSTileLayer, Marker, Popup, CircleMarker, useMapEvents } from 'react-leaflet'
 import { useMapStore } from '@/store/mapStore'
 import { cn } from '@/lib/utils'
 
@@ -26,6 +26,8 @@ export function SiteMap({ className, onLocationSelect }: SiteMapProps) {
   const floodLayer    = layers.find((l) => l.id === 'flood')
   const streamsLayer  = layers.find((l) => l.id === 'streams')
   const soilsLayer    = layers.find((l) => l.id === 'soils')
+  const epaLayer      = layers.find((l) => l.id === 'epa')
+  const epaMarkers    = useMapStore((s) => s.epaMarkers)
 
   return (
     <MapContainer
@@ -87,6 +89,32 @@ export function SiteMap({ className, onLocationSelect }: SiteMapProps) {
           version="1.1.1"
         />
       )}
+
+      {epaLayer?.visible && epaMarkers.map((m, i) => (
+        <CircleMarker
+          key={i}
+          center={[m.lat, m.lon]}
+          radius={m.category === 'superfund' ? 10 : 7}
+          pathOptions={{
+            color: m.color,
+            fillColor: m.color,
+            fillOpacity: 0.85,
+            weight: m.category === 'superfund' ? 2 : 1.5,
+          }}
+        >
+          <Popup>
+            <div className="text-xs space-y-0.5">
+              <div className="font-semibold">{m.name}</div>
+              <div className="uppercase text-gray-500 tracking-wide text-[10px]">
+                {m.category === 'superfund' ? 'Superfund / CERCLA' :
+                 m.category === 'rcra'      ? 'RCRA Hazardous Waste' :
+                 m.category === 'tri'       ? 'TRI Toxic Release' : 'EPA Facility'}
+              </div>
+              {m.detail && <div className="text-gray-600">{m.detail}</div>}
+            </div>
+          </Popup>
+        </CircleMarker>
+      ))}
 
       {onLocationSelect && <LocationPicker onSelect={onLocationSelect} />}
 
