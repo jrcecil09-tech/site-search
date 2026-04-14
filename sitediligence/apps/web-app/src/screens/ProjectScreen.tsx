@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, MapPin, FileText, Loader2 } from 'lucide-react'
 import { useProjectStore } from '@/store/projectStore'
-import { useMapStore, EpaMarker, HistoricMarker } from '@/store/mapStore'
+import { useMapStore, EpaMarker, HistoricMarker, UtilityLine } from '@/store/mapStore'
 import { SiteMap } from '@/components/map/SiteMap'
 import { ResultsPanel } from '@/components/results/ResultsPanel'
 import { WetlandsSummaryCard } from '@/components/results/WetlandsSummaryCard'
@@ -12,6 +12,8 @@ import { ElevationSummaryCard } from '@/components/results/ElevationSummaryCard'
 import { SoilsSummaryCard } from '@/components/results/SoilsSummaryCard'
 import { EpaSummaryCard } from '@/components/results/EpaSummaryCard'
 import { HistoricSummaryCard } from '@/components/results/HistoricSummaryCard'
+import { LandCoverCard } from '@/components/results/LandCoverCard'
+import { UtilitiesCard } from '@/components/results/UtilitiesCard'
 import { api } from '@/services/api'
 
 interface ResultItem {
@@ -153,6 +155,40 @@ function buildResultItems(apiResults: any[]): ResultItem[] {
       }
     }
 
+    if (r.query_type === 'landcover') {
+      const d = r.data
+      const hasData = d?.dominant_name != null
+      return {
+        id: 'landcover',
+        title: 'NLCD Land Cover',
+        status: r.status === 'success' ? (hasData ? 'success' : 'no_data') : 'error',
+        summary: hasData
+          ? `${d.dominant_name} · ${d.dominant_pct?.toFixed(1)}% dominant · ${d.sample_count} samples`
+          : 'No land cover data',
+        featureCount: d?.sample_count,
+        children: hasData ? <LandCoverCard data={d} /> : undefined,
+      }
+    }
+
+    if (r.query_type === 'utilities') {
+      const d = r.data
+      const hasLines = (d?.transmission_count ?? 0) > 0
+      const maxKv    = d?.voltage_summary?.max_kv
+      return {
+        id: 'utilities',
+        title: 'Utility Infrastructure',
+        status: r.status === 'success' ? (hasLines ? 'success' : 'no_data') : 'error',
+        summary: hasLines
+          ? [
+              `${d.transmission_count} transmission line${d.transmission_count !== 1 ? 's' : ''}`,
+              maxKv != null && `max ${maxKv.toLocaleString()} kV`,
+            ].filter(Boolean).join(' · ')
+          : `No transmission lines within ${d?.display?.buffer_miles ?? 1} mi`,
+        featureCount: d?.transmission_count,
+        children: <UtilitiesCard data={d} />,
+      }
+    }
+
     return {
       id: r.query_type,
       title: r.query_type,
@@ -174,14 +210,17 @@ export default function ProjectScreen() {
   const layers              = useMapStore((s) => s.layers)
   const setEpaMarkers       = useMapStore((s) => s.setEpaMarkers)
   const clearEpaMarkers     = useMapStore((s) => s.clearEpaMarkers)
-  const setHistoricMarkers  = useMapStore((s) => s.setHistoricMarkers)
+  const setHistoricMarkers   = useMapStore((s) => s.setHistoricMarkers)
   const clearHistoricMarkers = useMapStore((s) => s.clearHistoricMarkers)
+  const setUtilityLines      = useMapStore((s) => s.setUtilityLines)
+  const clearUtilityLines    = useMapStore((s) => s.clearUtilityLines)
 
   async function handleRunQueries() {
     if (loading) return
     setLoading(true)
     clearEpaMarkers()
     clearHistoricMarkers()
+    clearUtilityLines()
     setResults([
       { id: 'wetlands',    title: 'NWI Wetlands',              status: 'loading' },
       { id: 'flood_zones', title: 'FEMA Flood Zones',           status: 'loading' },
@@ -190,6 +229,8 @@ export default function ProjectScreen() {
       { id: 'epa',         title: 'EPA Records',                status: 'loading' },
       { id: 'elevation',   title: '3DEP Elevation',             status: 'loading' },
       { id: 'historic',    title: 'Historic & Archaeological',  status: 'loading' },
+      { id: 'landcover',   title: 'NLCD Land Cover',            status: 'loading' },
+      { id: 'utilities',   title: 'Utility Infrastructure',     status: 'loading' },
     ])
 
     try {
@@ -210,14 +251,18 @@ export default function ProjectScreen() {
       const floodVisible     = layers.find((l) => l.id === 'flood')?.visible
       const streamsVisible   = layers.find((l) => l.id === 'streams')?.visible
       const soilsVisible     = layers.find((l) => l.id === 'soils')?.visible
-      const epaVisible       = layers.find((l) => l.id === 'epa')?.visible
-      const historicVisible  = layers.find((l) => l.id === 'historic')?.visible
-      if (returnedTypes.has('wetlands')    && !wetlandsVisible) toggleLayer('wetlands')
-      if (returnedTypes.has('flood_zones') && !floodVisible)    toggleLayer('flood')
-      if (returnedTypes.has('streams')     && !streamsVisible)  toggleLayer('streams')
-      if (returnedTypes.has('soils')       && !soilsVisible)    toggleLayer('soils')
-      if (returnedTypes.has('epa')         && !epaVisible)      toggleLayer('epa')
-      if (returnedTypes.has('historic')    && !historicVisible) toggleLayer('historic')
+      const epaVisible          = layers.find((l) => l.id === 'epa')?.visible
+      const historicVisible     = layers.find((l) => l.id === 'historic')?.visible
+      const landcoverVisible    = layers.find((l) => l.id === 'landcover')?.visible
+      const utilitiesVisible    = layers.find((l) => l.id === 'utilities')?.visible
+      if (returnedTypes.has('wetlands')    && !wetlandsVisible)  toggleLayer('wetlands')
+      if (returnedTypes.has('flood_zones') && !floodVisible)     toggleLayer('flood')
+      if (returnedTypes.has('streams')     && !streamsVisible)   toggleLayer('streams')
+      if (returnedTypes.has('soils')       && !soilsVisible)     toggleLayer('soils')
+      if (returnedTypes.has('epa')         && !epaVisible)       toggleLayer('epa')
+      if (returnedTypes.has('historic')    && !historicVisible)  toggleLayer('historic')
+      if (returnedTypes.has('landcover')   && !landcoverVisible) toggleLayer('landcover')
+      if (returnedTypes.has('utilities')   && !utilitiesVisible) toggleLayer('utilities')
 
       // Build EPA point markers
       const epaResult = res.data.results.find((r: any) => r.query_type === 'epa')
@@ -274,6 +319,22 @@ export default function ProjectScreen() {
         ]
         setHistoricMarkers(markers)
       }
+
+      // Build utility polylines (GeoJSON [lon, lat] → Leaflet [lat, lon])
+      const utilitiesResult = res.data.results.find((r: any) => r.query_type === 'utilities')
+      if (utilitiesResult?.status === 'success' && utilitiesResult.data) {
+        const d = utilitiesResult.data
+        const lines: UtilityLine[] = (d.transmission_lines || []).map((line: any) => ({
+          segments: (line.coordinates || []).map((seg: [number, number][]) =>
+            seg.map(([lon, lat]: [number, number]) => [lat, lon] as [number, number])
+          ),
+          category: 'transmission' as const,
+          color: line.color ?? d.display.color_transmission,
+          name: line.owner ?? undefined,
+          voltage: line.voltage_kv != null ? `${line.voltage_kv.toLocaleString()} kV` : undefined,
+        }))
+        setUtilityLines(lines)
+      }
     } catch {
       setResults([
         { id: 'wetlands',    title: 'NWI Wetlands',             status: 'error', summary: 'Query failed' },
@@ -283,6 +344,8 @@ export default function ProjectScreen() {
         { id: 'epa',         title: 'EPA Records',               status: 'error', summary: 'Query failed' },
         { id: 'elevation',   title: '3DEP Elevation',            status: 'error', summary: 'Query failed' },
         { id: 'historic',    title: 'Historic & Archaeological', status: 'error', summary: 'Query failed' },
+        { id: 'landcover',   title: 'NLCD Land Cover',           status: 'error', summary: 'Query failed' },
+        { id: 'utilities',   title: 'Utility Infrastructure',    status: 'error', summary: 'Query failed' },
       ])
     } finally {
       setLoading(false)

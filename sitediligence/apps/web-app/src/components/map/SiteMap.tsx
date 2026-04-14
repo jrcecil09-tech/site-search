@@ -1,4 +1,4 @@
-import { MapContainer, TileLayer, WMSTileLayer, Marker, Popup, CircleMarker, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, WMSTileLayer, Marker, Popup, CircleMarker, Polyline, useMapEvents } from 'react-leaflet'
 import { useMapStore } from '@/store/mapStore'
 import { cn } from '@/lib/utils'
 
@@ -23,13 +23,16 @@ export function SiteMap({ className, onLocationSelect }: SiteMapProps) {
   const layers          = useMapStore((s) => s.layers)
   const epaMarkers      = useMapStore((s) => s.epaMarkers)
   const historicMarkers = useMapStore((s) => s.historicMarkers)
+  const utilityLines    = useMapStore((s) => s.utilityLines)
 
-  const wetlandsLayer = layers.find((l) => l.id === 'wetlands')
+  const wetlandsLayer   = layers.find((l) => l.id === 'wetlands')
   const floodLayer    = layers.find((l) => l.id === 'flood')
   const streamsLayer  = layers.find((l) => l.id === 'streams')
   const soilsLayer    = layers.find((l) => l.id === 'soils')
-  const epaLayer      = layers.find((l) => l.id === 'epa')
-  const historicLayer = layers.find((l) => l.id === 'historic')
+  const epaLayer        = layers.find((l) => l.id === 'epa')
+  const historicLayer   = layers.find((l) => l.id === 'historic')
+  const landcoverLayer  = layers.find((l) => l.id === 'landcover')
+  const utilitiesLayer  = layers.find((l) => l.id === 'utilities')
 
   return (
     <MapContainer
@@ -148,6 +151,42 @@ export function SiteMap({ className, onLocationSelect }: SiteMapProps) {
           </Popup>
         </CircleMarker>
       ))}
+
+      {/* NLCD 2021 Land Cover WMS */}
+      {landcoverLayer?.visible && (
+        <WMSTileLayer
+          url="https://www.mrlc.gov/geoserver/mrlc_display/NLCD_2021_Land_Cover_L48/ows"
+          layers="NLCD_2021_Land_Cover_L48"
+          format="image/png"
+          transparent
+          opacity={landcoverLayer.opacity}
+          attribution='<a href="https://www.mrlc.gov/">MRLC NLCD 2021</a>'
+          version="1.3.0"
+        />
+      )}
+
+      {/* Utility transmission lines */}
+      {utilitiesLayer?.visible && utilityLines.map((line, i) =>
+        line.segments.map((seg, j) => (
+          <Polyline
+            key={`util-${i}-${j}`}
+            positions={seg}
+            pathOptions={{ color: line.color, weight: 2.5, opacity: 0.85 }}
+          >
+            {(line.name || line.voltage) && (
+              <Popup>
+                <div className="text-xs space-y-0.5">
+                  {line.name && <div className="font-semibold">{line.name}</div>}
+                  {line.voltage && <div className="text-gray-500">{line.voltage}</div>}
+                  <div className="uppercase text-gray-400 tracking-wide text-[10px]">
+                    {line.category === 'transmission' ? 'Electric Transmission' : line.category}
+                  </div>
+                </div>
+              </Popup>
+            )}
+          </Polyline>
+        ))
+      )}
 
       {onLocationSelect && <LocationPicker onSelect={onLocationSelect} />}
 

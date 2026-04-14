@@ -27,6 +27,14 @@ export interface HistoricMarker {
   near_flag: boolean
 }
 
+export interface UtilityLine {
+  segments: [number, number][][]  // Leaflet [lat, lon] order
+  category: 'transmission' | 'gas' | 'water' | 'sewer' | 'telecom'
+  color: string
+  name?: string
+  voltage?: string
+}
+
 interface MapState {
   center: [number, number]
   zoom: number
@@ -35,6 +43,7 @@ interface MapState {
   layers: MapLayer[]
   epaMarkers: EpaMarker[]
   historicMarkers: HistoricMarker[]
+  utilityLines: UtilityLine[]
   setCenter: (center: [number, number]) => void
   setZoom: (zoom: number) => void
   setSelectedCoords: (coords: [number, number] | null) => void
@@ -44,6 +53,8 @@ interface MapState {
   clearEpaMarkers: () => void
   setHistoricMarkers: (markers: HistoricMarker[]) => void
   clearHistoricMarkers: () => void
+  setUtilityLines: (lines: UtilityLine[]) => void
+  clearUtilityLines: () => void
 }
 
 const DEFAULT_LAYERS: MapLayer[] = [
@@ -55,6 +66,8 @@ const DEFAULT_LAYERS: MapLayer[] = [
   { id: 'soils',     name: 'SSURGO Soils',        visible: false, opacity: 0.55, category: 'soils' },
   { id: 'epa',       name: 'EPA Facilities',       visible: false, opacity: 1,    category: 'regulatory' },
   { id: 'historic',  name: 'Historic Properties',  visible: false, opacity: 1,    category: 'cultural' },
+  { id: 'landcover', name: 'NLCD Land Cover',       visible: false, opacity: 0.6,  category: 'environmental' },
+  { id: 'utilities', name: 'Utility Lines',          visible: false, opacity: 1,    category: 'infrastructure' },
 ]
 
 export const useMapStore = create<MapState>()((set) => ({
@@ -65,6 +78,7 @@ export const useMapStore = create<MapState>()((set) => ({
   layers: DEFAULT_LAYERS,
   epaMarkers: [],
   historicMarkers: [],
+  utilityLines: [],
 
   setCenter: (center) => set({ center }),
   setZoom: (zoom) => set({ zoom }),
@@ -89,4 +103,6 @@ export const useMapStore = create<MapState>()((set) => ({
   clearEpaMarkers:    ()        => set({ epaMarkers: [] }),
   setHistoricMarkers: (markers) => set({ historicMarkers: markers }),
   clearHistoricMarkers: ()      => set({ historicMarkers: [] }),
+  setUtilityLines:    (lines)   => set({ utilityLines: lines }),
+  clearUtilityLines:  ()        => set({ utilityLines: [] }),
 }))

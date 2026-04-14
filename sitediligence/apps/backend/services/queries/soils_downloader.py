@@ -99,6 +99,9 @@ def geojson_to_geodataframe(geojson_fc: dict[str, Any]) -> gpd.GeoDataFrame | No
         return None
 
     gdf = gpd.GeoDataFrame(rows, geometry="geometry", crs="EPSG:4326")
+    # Convert nullable string columns to plain object dtype for fiona/shapefile compatibility
+    for col in gdf.select_dtypes(include=["string"]).columns:
+        gdf[col] = gdf[col].astype(object)
     return gdf
 
 

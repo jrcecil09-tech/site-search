@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from io import BytesIO
+from io import StringIO
 from typing import Any
 
 import ezdxf
@@ -28,9 +28,9 @@ def export_site_to_dxf(site: dict, layers: list[dict]) -> bytes:
         dxfattribs={"height": 10},
     )
 
-    buf = BytesIO()
+    buf = StringIO()
     doc.write(buf)
-    return buf.getvalue()
+    return buf.getvalue().encode("utf-8")
 
 
 def export_soils_to_dxf(
@@ -166,6 +166,6 @@ def export_soils_to_dxf(
                     },
                 )
 
-    buf = BytesIO()
+    buf = StringIO()
     doc.write(buf)
-    return buf.getvalue()
+    return buf.getvalue().encode("utf-8")
